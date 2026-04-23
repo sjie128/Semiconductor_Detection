@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliability Guard - Enterprise Dashboard</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .metrics { display: flex; justify-content: space-around; margin-top: 30px; }
+        .card { text-align: center; padding: 20px; border-radius: 10px; background: #fafafa; width: 30%; border: 1px solid #ddd; }
+        .value { font-size: 2.2em; font-weight: bold; color: #3498db; }
+        .status-box { margin-top: 30px; padding: 20px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 1.2em; transition: 0.3s; }
+        .healthy { background-color: #d4edda; color: #155724; }
+        .defect { background-color: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
+        canvas { margin-top: 40px; }
+
+        /* --- START OF NEW STYLES --- */
+        .inspection-grid { display: flex; gap: 20px; margin-top: 30px; }
+        .inspection-card { flex: 1; background: #fdfdfd; padding: 15px; border-radius: 10px; border: 1px solid #eee; text-align: center; }
+        #live-cam { width: 100%; height: auto; border-radius: 8px; border: 2px solid #2c3e50; background-color: #000; }
+        .error-display { font-size: 2.5em; font-weight: bold; color: #e67e22; margin: 10px 0; }
+        /* --- END OF NEW STYLES --- */
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛡️ Semiconductor Thermal Reliability Monitor</h1>
+    
+    <div class="metrics">
+        <div class="card">
+            <div>Avg Temp</div>
+            <div id="avg-temp" class="value">0.0</div>
+            <div>°C</div>
+        </div>
+        <div class="card">
+            <div>Heat Concentration</div>
+            <div id="spread" class="value">0.0</div>
+            <div>ΔT °C</div>
+        </div>
+        <div class="card">
+            <div>AI Risk Score</div>
+            <div id="score" class="value">0.0</div>
+        </div>
+    </div>
+
+    <div class="inspection-grid">
+        <div class="inspection-card">
+            <h3>📸 ESP32-CAM Real-Time Feed</h3>
+            <img id="live-cam" src="" alt="Waiting for Camera Stream...">
+        </div>
+        <div class="inspection-card">
+            <h3>📉 Thermal Stress Error Analysis</h3>
+            <div class="error-display"><span id="error-val">0.0</span>%</div>
+            <p>Deviation from Theoretical Limit</p>
+            <small>Threshold: 10.0% Error Range</small>
+        </div>
+    </div>
+    <div id="status-display" class="status-box healthy">
+        SYSTEM READY - MONITORING LIVE
+    </div>
+
+    <canvas id="reliabilityChart" width="800" height="300"></canvas>
+</div>
+
+<script>
+    const socket = io();
+    const statusBox = document.getElementById('status-display');
+    const ctx = document.getElementById('reliabilityChart').getContext('2d');
+
+    // Chart Configuration
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Heat Spread (Concentration)',
+                data: [],
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    socket.on('sensor-update', (data) => {
+        // Update Metrics
+        document.getElementById('avg-temp').innerText = data.avg_t.toFixed(1);
+        document.getElementById('spread').innerText = data.spread.toFixed(1);
+        document.getElementById('score').innerText = data.score;
+
+        // --- NEW UPDATE LOGIC ---
+        // Update Error Range and Camera Image
+        if (data.error) document.getElementById('error-val').innerText = data.error;
+        if (data.img) document.getElementById('live-cam').src = data.img;
+        // -------------------------
+
+        // Update UI Status based on Heat Concentration logic
+        if (data.status.includes("DEFECT")) {
+            statusBox.innerText = "🚨 " + data.status;
+            statusBox.className = "status-box defect";
+        } else {
+            statusBox.innerText = "✅ CONDITION: " + data.status;
+            statusBox.className = "status-box healthy";
+        }
+
+        // Update Chart
+        const now = new Date().toLocaleTimeString();
+        chart.data.labels.push(now);
+        chart.data.datasets[0].data.push(data.spread);
+        if (chart.data.labels.length > 15) {
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+        }
+        chart.update();
+    });
+</script>
+
+</body>
+</html>

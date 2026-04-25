@@ -425,3 +425,6 @@ FodyWeavers.xsd
 *.msm
 *.msp
 >>>>>>> 5bf3267bf34b979eb2ca02bf84c111b670e4acb4
+.venv/
+__pycache__/
+*.pt

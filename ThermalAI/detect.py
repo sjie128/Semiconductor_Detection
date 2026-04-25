@@ -2,6 +2,10 @@ import cv2
 from ultralytics import YOLO
 import numpy as np
 import time
+import requests 
+
+# The address of your Dashboard Server
+SERVER_URL = "http://localhost:3000/api/update"
 
 # --- 1. Load Engine ---
 model = YOLO('yolov8n.pt') 
@@ -74,6 +78,17 @@ def start_detection():
                 
                 # 2. AI Structural Analysis
                 structure = ai_structure_analyzer(roi)
+                
+                # --- NEW: Push Data to App Dashboard ---
+                try:
+                    requests.post(SERVER_URL, json={
+                        "status": status,
+                        "spread": round(spread, 2),
+                        "stress": round(stress, 2),
+                        "structure": structure
+                    }, timeout=0) # Fast timeout to prevent lag
+                except:
+                    pass # Silently skip if server is not yet running
                 
                 # Dynamic Colors
                 status_color = (0, 255, 0) if status == "GOOD CONDITION" else (0, 0, 255)

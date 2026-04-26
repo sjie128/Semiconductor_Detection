@@ -4,8 +4,10 @@
   "description": "",
   "main": "App.js",
   "scripts": {
-    "start": "node server.js",
-    "dist": "electron-builder --win portable"
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +15,7 @@
   "type": "commonjs",
   "dependencies": {
     "electron": "^41.3.0",
+    "expo": "^55.0.17",
     "express": "^5.2.1",
     "serialport": "^13.0.0",
     "socket.io": "^4.8.3",

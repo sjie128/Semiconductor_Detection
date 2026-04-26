@@ -1,13 +1,13 @@
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
-const { fork } = require('child_process');
+import { app, BrowserWindow } from 'electron';
+import { join } from 'path';
+import { fork } from 'child_process';
 
 let mainWindow;
 let serverProcess;
 
 function createWindow() {
   // 1. Start the backend server as a hidden background process
-  serverProcess = fork(path.join(__dirname, 'server.js'));
+  serverProcess = fork(join(__dirname, 'server.js'));
 
   mainWindow = new BrowserWindow({
     width: 1200,
